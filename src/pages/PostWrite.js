@@ -8,10 +8,12 @@ import {actionCreators as postActions} from "../redux/modules/post";
 const PostWrite = (props) => {
   const dispatch = useDispatch();
   const is_login = useSelector((state) => state.user.is_login);
+  const image_preview = useSelector((state) => state.image.preview);
+  
   // 뭐지 이건?, 
   const {history} = props;
 
-  const [contents, setContents] = React.useState()
+  const [contents, setContents] = React.useState();
 
   const changeContents = (e) => {
     setContents(e.target.value);
@@ -42,7 +44,7 @@ const PostWrite = (props) => {
           </Text>
         </Grid>
 
-        <Image shape="rectangle" />
+        <Image shape="rectangle" src={image_preview}/>
       </Grid>
 
       <Grid padding="16px">

@@ -4,10 +4,12 @@ import { useSelector, useDispatch } from "react-redux";
 
 import {actionCreators as imageActions} from "../redux/modules/image"
 
+
 const Upload = (props) => { 
     const dispatch = useDispatch();
     const uploading = useSelector((state) => state.image.uploading);
     const fileInput = React.useRef();
+
 
     const selectFile = (e) => {
         console.log(e.target.files[0]); // -> FileList !== array 
@@ -26,6 +28,7 @@ const Upload = (props) => {
         };
     };
 
+
     const uploadFB = () => {
         if (!fileInput.current || fileInput.current.files.length === 0){
             window.alert("파일을 선택해주세요!");
@@ -41,6 +44,7 @@ const Upload = (props) => {
                 type="file" 
                 ref={fileInput} 
                 onChange={selectFile}
+                //redux - uploading(boolean)
                 disabled={uploading}
             />
             <Button _onClick={uploadFB}>업로드하기</Button>

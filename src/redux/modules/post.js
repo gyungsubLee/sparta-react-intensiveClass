@@ -1,8 +1,9 @@
-
 import { createAction, handleActions } from "redux-actions";
 import { produce } from "immer";
-import { firestore } from "../../shared/firebase";
+import { firestore, storage } from "../../shared/firebase";
 import moment from "moment";
+
+import { actionCreators as imageActions } from "./image";
 
 const SET_POST = "SET_POST";
 const ADD_POST = "ADD_POST";
@@ -22,9 +23,9 @@ const initialPost = {
     //     user_name: "mean0",
     //     user_profile: "https://cdn.pixabay.com/photo/2022/02/12/19/58/cat-7009836_960_720.jpg",
     // },
-    image_url: "https://cdn.pixabay.com/photo/2022/02/12/19/58/cat-7009836_960_720.jpg",
+    image_url: "",
     contents: "",
-    comment_cnt:0,
+    comment_cnt: 0,
     // insert_dt: "2021-02-27 10:00:00",
     insert_dt: moment().format("YYYY-MM-DD hh:mm:ss"),
 };
@@ -34,7 +35,9 @@ const initialPost = {
 const addPostFB = (contents="") =>{
     return function (dispatch, getState, {history}){
         const postDB = firestore.collection("post");
+        //getState: redux-store의 state에 접근 가능하게 해준다.
         const _user = getState().user.user;
+        const _image = getState().image.preview;
 
         const user_info = {
             user_name: _user.user_name,
@@ -47,16 +50,35 @@ const addPostFB = (contents="") =>{
             contents: contents,
             insert_dt: moment().format("YYYY-MM-DD hh:mm:ss"),
         };
+        // console.log(_image);
+        // console.log(typeof(_image);
+        const _upload = storage.ref(`images/${user_info.user_id}_${new Date().getTime()}`)
+        _upload.putString(_image, 'data_url')
+        .then((snapshot) => {
+            snapshot.ref.getDownloadURL().then(url => {
+                console.log(url);
+                //promise 안의 값 return으로 내보내줘야 쓰기 가능
+                return url;
+            }).then(url => {
+                //firebase에 추가: ~~.add({ddaefeafea})
+                postDB
+                .add({...user_info, ..._post, image_url: url})
+                .then((doc) => {
+                    let post = {user_info, ..._post, id:doc.id, image_url: url};
+                    dispatch(addPost(post));
+                    history.replace("/");
 
-        //firebase에 추가: ~~.add({ddaefeafea})
-        postDB.add({...user_info, ..._post}).then((doc) => {
-            let post = {user_info, ..._post, id:doc.id};
-            dispatch(addPost(post));
-            history.replace("/");
-        }).catch((err) =>{
-            console.log("post 작성에 실패 했어요!", err);
-        })
-        
+                    dispatch(imageActions.setPreview(null));
+                })
+                .catch((err) =>{
+                    window.alert("앗! 포스트 작성에 문제가 있어요!");
+                    console.log("post 작성에 실패 했어요!", err);
+                })
+            }).catch((err) => {
+                window.alert("앗! 이미지 업로드에 문제가 있어요!");
+                console.log("이미지 업로드에 실패 했습니다.", err);
+            })
+        });
     }
 }
 

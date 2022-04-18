@@ -23,7 +23,7 @@ const initialState = {
 //middlewares
 const uploadImageFB= (image) => {
     return function (dispatch, getState, {history}){
-        
+        //uploading: true 변경
         dispatch(uploading(true));
         const _upload = storage.ref(`images/${image.name}`).put(image);
 
@@ -46,6 +46,7 @@ const uploadImageFB= (image) => {
 export default handleActions(
     {
         [UPLOAD_IMAGE]: (state, action) => produce(state, (draft) =>{
+            //action: 액션함수를 통해서 받아온 state 값
             draft.image_url = action.payload.image_url;
             draft.uploading = false;
         }),

@@ -44,7 +44,7 @@ const PostWrite = (props) => {
           </Text>
         </Grid>
 
-        <Image shape="rectangle" src={image_preview}/>
+        <Image shape="rectangle" src={image_preview? image_preview: 'http://via.placeholder.com/400x300'}/>
       </Grid>
 
       <Grid padding="16px">

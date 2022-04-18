@@ -17,7 +17,7 @@ const setPreview = createAction(SET_PREVIEW, (preview) => ({ preview }));
 const initialState = {
     image_url: '',
     uploading: false,
-    preview: 'http://via.placeholder.com/400x300',
+    preview: null,
 };
 
 //middlewares
@@ -28,11 +28,11 @@ const uploadImageFB= (image) => {
         const _upload = storage.ref(`images/${image.name}`).put(image);
 
         _upload.then((snapshot) => {
-            console.log(snapshot);
-
+            // console.log(snapshot);
+            
             // 업로드한 파일의 다운로드 경로를 가져오자!
             snapshot.ref.getDownloadURL().then((url) => {
-                console.log(url);
+                // console.log(url);
                 dispatch(uploadImage(url));
             });
         }).catch(err => {

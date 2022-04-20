@@ -23,11 +23,11 @@ import {history} from "../redux/configureStore";
             )}
           </Grid>
         </Grid>
-        <Grid padding="16px">
-          <Text>{props.contents}</Text>
-        </Grid>
         <Grid>
           <Image shape="rectangle" src={props.image_url} />
+        </Grid>
+        <Grid padding="16px">
+          <Text>{props.contents}</Text>
         </Grid>
         <Grid padding="16px">
           <Text margin="0px" bold>
@@ -42,7 +42,7 @@ import {history} from "../redux/configureStore";
 Post.defaultProps = {
   user_info: {
     user_name: "mean0",
-    user_profile: "",
+    user_profile: "https://images.unsplash.com/photo-1650368237704-bf3d79a8b6b4?ixlib=rb-1.2.1&ixid=MnwxMjA3fDB8MHxlZGl0b3JpYWwtZmVlZHw1fHx8ZW58MHx8fHw%3D&auto=format&fit=crop&w=1000&q=60",
   },
   image_url: "",
   contents: "props 오류",

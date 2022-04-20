@@ -2,12 +2,15 @@ import React from "react";
 import { Text, Input, Grid, Button } from "../elements";
 import { getCookie, setCookie, deleteCookie } from "../shared/Cookie";
 
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector,} from "react-redux";
 import { actionCreators as userActions } from "../redux/modules/user";
 import { emailCheck } from "../shared/common";
 
 const Login = (props) => {
   const dispatch = useDispatch();
+  const is_login = useSelector((state) => state.user.is_login)
+
+  const {history} = props;
 
   const [id, setId] = React.useState("");
   const [pwd, setPwd] = React.useState("");
@@ -29,6 +32,20 @@ const Login = (props) => {
     dispatch(userActions.loginFB(id, pwd));
   };
 
+  if(is_login){
+    return(
+      <React.Fragment>
+        <Text>이미 로그인이 되어있습니다.</Text>
+        <Button 
+          text="홈으로가기" 
+          _onClick={()=>{
+            history.replace("/");
+          }}
+        >
+        </Button>
+      </React.Fragment>
+    )
+  }
   return (
     <React.Fragment>
       <Grid padding="16px">

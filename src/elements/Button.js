@@ -44,12 +44,12 @@ const ElButton = styled.button`
   border: none;
   border-radius: 5px;
   ${(props) => (props.margin ? `margin: ${props.margin};` : "")}
+  transition: 0.7s cubic-bezier(0.215, 0.610, 0.355, 1);
   &:hover {
     background-color: #EFF6FF;
     color:black;
     font-weight: 600;
     border-radius: 10px;
-    transition: 1s cubic-bezier(0.215, 0.610, 0.355, 1);
   }
 `;
 

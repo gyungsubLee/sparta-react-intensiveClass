@@ -5,20 +5,25 @@ import "moment";
 import moment from "moment";
 
 import { actionCreators as imageActions } from "./image";
+import { size } from "lodash";
 
 const SET_POST = "SET_POST";
 const ADD_POST = "ADD_POST";
 const EDIT_POST = "EDIT_POST";
+const LOADING = "LOADING";
 
-const setPost = createAction(SET_POST, (post_list) => ({ post_list }));
+const setPost = createAction(SET_POST, (post_list, paging) => ({ post_list, paging }));
 const addPost = createAction(ADD_POST, (post) => ({ post }));
 const editPost = createAction(EDIT_POST, (post_id, post) => ({
   post_id,
   post,
 }));
+const loading = createAction(LOADING, (is_loading) => ({is_loading}));
 
 const initialState = {
   list: [],
+  paging: {start: null, next: null, size: 3},
+  is_loading: false,
 };
 
 const initialPost = {
@@ -93,6 +98,7 @@ const editPostFB = (post_id = null, post = {}) => {
 
 const addPostFB = (contents = "") => {
   return function (dispatch, getState, { history }) {
+
     const postDB = firestore.collection("post");
 
     const _user = getState().user.user;
@@ -149,36 +155,105 @@ const addPostFB = (contents = "") => {
   };
 };
 
-const getPostFB = () => {
+const getPostFB = (start = null, size=3) => {
   return function (dispatch, getState, { history }) {
+
+    //state에서 페이징 정보 가져오기
+    let _paging = getState().post.paging;
+
+    //시작 정보가 기록 but 가져올 데이터 없을 때의 예외처리
+    if (_paging.start && !_paging.next){
+      return;
+    }
+    
+    // firebaste-"post(collection)" 참조
+    dispatch(loading(true));
     const postDB = firestore.collection("post");
 
-    postDB.get().then((docs) => {
-      let post_list = [];
-      docs.forEach((doc) => {
-        let _post = doc.data();
+    let query = postDB.orderBy("insert_dt", "desc").limit(2)
 
-        // ['commenct_cnt', 'contents', ..]
-        let post = Object.keys(_post).reduce(
-          (acc, cur) => {
-            if (cur.indexOf("user_") !== -1) {
-              return {
-                ...acc,
-                user_info: { ...acc.user_info, [cur]: _post[cur] },
-              };
-            }
-            return { ...acc, [cur]: _post[cur] };
-          },
-          { id: doc.id, user_info: {} }
-        );
+    //시작 정보가 있을 시 예외처리(시작점부터 가져옴)
+    if(start){
+      query = query.startAt(start);
+    }
 
-        post_list.push(post);
+
+    // 사이즈보다 1개 더 크게 가져온다.
+    // 3개씩 끊어서 보여준다고 할 때, 4개를 가져올 수 있으면 다음 페이지가 있겠네 하고 알 수 있다. 
+    // 4개 미만, 다음 페이지 없음.
+    // 뭔소리야?
+    query
+      .limit(size + 1)
+      .get()
+      .then(docs => {
+        let post_list = [];
+
+        //새롭게 페이징 정보를 만들어 준다.
+        //시작점에는 새로 가져온 정보의 시작점을 넣고,
+        //next에는 마지막 항목을 넣는다.
+        //(next가 다음번 리스트 호출 때 start 파라미터로 넘어온다.)
+        let paging = {
+          start: docs.docs[0],
+          next: docs.docs.length === size+1? docs.docs[docs.docs.length-1] : null,
+          size: size,
+        };
+
+        docs.forEach((doc) => {
+          let _post = doc.data();
+
+          // ['commenct_cnt', 'contents', ..]
+          let post = Object.keys(_post).reduce(
+            (acc, cur) => {
+              if (cur.indexOf("user_") !== -1) {
+                return {
+                  ...acc,
+                  user_info: { ...acc.user_info, [cur]: _post[cur] },
+                };
+              }
+              return { ...acc, [cur]: _post[cur] };
+            },
+            { id: doc.id, user_info: {} }
+          );
+          post_list.push(post);
+        });
+
+        //마지막 하나 빼기
+        //그래야 size대로 리스트가 추가 된다.
+        //마지막 데이터는 다음 페이지의 유뮤를 알려주기 위한 친구일 뿐이다?
+        post_list.pop();
+
+        dispatch(setPost(post_list, paging));
       });
 
-      console.log(post_list);
+    return;
 
-      dispatch(setPost(post_list));
-    });
+
+    // postDB.get().then((docs) => {
+    //   let post_list = [];
+    //   docs.forEach((doc) => {
+    //     let _post = doc.data();
+
+    //     // ['commenct_cnt', 'contents', ..]
+    //     let post = Object.keys(_post).reduce(
+    //       (acc, cur) => {
+    //         if (cur.indexOf("user_") !== -1) {
+    //           return {
+    //             ...acc,
+    //             user_info: { ...acc.user_info, [cur]: _post[cur] },
+    //           };
+    //         }
+    //         return { ...acc, [cur]: _post[cur] };
+    //       },
+    //       { id: doc.id, user_info: {} }
+    //     );
+
+    //     post_list.push(post);
+    //   });
+
+    //   console.log(post_list);
+
+    //   dispatch(setPost(post_list));
+    // });
   };
 };
 
@@ -186,9 +261,10 @@ export default handleActions(
   {
     [SET_POST]: (state, action) =>
       produce(state, (draft) => {
-        draft.list = action.payload.post_list;
+        draft.list.push(...action.payload.post_list);
+        draft.paging = action.payload.paging;
+        draft.is_loading = false;
       }),
-
     [ADD_POST]: (state, action) =>
       produce(state, (draft) => {
         draft.list.unshift(action.payload.post);
@@ -199,6 +275,9 @@ export default handleActions(
 
         draft.list[idx] = { ...draft.list[idx], ...action.payload.post };
       }),
+    [LOADING]: (state, action) => produce(state, (draft) => {
+      draft.is_loading = action.payload.is_loading;
+    }),
   },
   initialState
 );
